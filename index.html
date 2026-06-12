@@ -134,7 +134,7 @@
    [구성 개요 — 단순화 + 차단목록 방식]
    - 기사 수집: 무료 Google News RSS (제목·출처·날짜·링크), 프록시 경유 (배포 시)
    - 매체 정책: 화이트리스트 폐지. 주요 페이월 매체만 차단(BLOCKED_SOURCES), 그 외 전부 표시.
-   - 제목은 한국어로 표시(수집 시점 번역, title_ko). 클릭 시 원문 기사로 연결.
+   - 기사 제목은 RSS 원문 그대로 표시. 클릭 시 원문 기사로 연결.
    - 현재: 샘플 데이터로 동작. 샘플은 2026-06 실제 수집 사례를 반영.
    ============================================================ */
 
@@ -243,7 +243,7 @@ function renderTabs() {
 }
 function itemRow(a) {
   return '<div class="item"><div class="item-src">' + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div><div class="item-title"><a href="' + a.url + '">' + a.title_ko + '</a></div></div>';
+    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
@@ -266,7 +266,7 @@ function buildSummaryText() {
   lines.push('');
   lines.push('기사 목록 (' + arr.length + '건):');
   arr.forEach(function(a, i) {
-    lines.push((i + 1) + '. ' + (a.title || a.title_ko || '제목 없음') + ' — ' + a.source + ' (' + fmtDate(a.daysAgo) + ')');
+    lines.push((i + 1) + '. ' + (a.title || '제목 없음') + ' — ' + a.source + ' (' + fmtDate(a.daysAgo) + ')');
     lines.push('   ' + a.url);
   });
   return lines.join('\n');
