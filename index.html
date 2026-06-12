@@ -79,12 +79,12 @@
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: var(--paper); border: 1px solid var(--ink); transition: all .12s; }
   .more-btn:hover { background: var(--ink); color: var(--paper); }
-  .copy-guide { font-size: 13.5px; color: #ffffff; margin-top: 8px; line-height: 1.7;
-    padding: 11px 15px; border: 1px solid #1a56db; border-radius: 4px; background: #1a56db; }
-  .copy-guide strong { color: #ffffff; font-weight: 700; }
+  .copy-guide { font-size: 13.5px; color: #1a56db; margin-top: 8px; line-height: 1.7;
+    padding: 11px 15px; border: 1px solid #1a56db; border-radius: 0; background: #ffffff; }
+  .copy-guide strong { color: #1a56db; font-weight: 700; }
   .summary-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
     font-family: inherit; font-size: 12.5px; font-weight: 600; color: #ffffff;
-    background: #e24b4a; border: 1px solid #e24b4a; padding: 7px 14px; transition: opacity .12s; border-radius: 4px; }
+    background: #e24b4a; border: 1px solid #e24b4a; padding: 7px 14px; transition: opacity .12s; }
   .summary-btn:hover { opacity: .85; }
   .summary-btn.copied { background: #ffffff; color: #e24b4a; }
   footer { margin-top: 40px; padding: 22px 0 40px; border-top: 1px solid var(--line); font-size: 11px;
@@ -128,7 +128,7 @@
     <div class="note" id="searchNote">고정 탭 외 기업을 조회할 때 사용합니다. 기업명을 입력하면 설정된 기간 기준으로 기사를 수집합니다. 결과는 저장되지 않습니다.</div>
   </div>
 
-  <main id="content"></main>
+  <main id="content" translate="yes"></main>
   <footer id="footer" translate="no"></footer>
 </div>
 
@@ -247,7 +247,7 @@ function renderTabs() {
 }
 function itemRow(a) {
   return '<div class="item"><div class="item-src" translate="no">' + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
+    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener" lang="en">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
@@ -317,7 +317,7 @@ function render() {
     let html = '<div class="section-bar" translate="no"><h2>' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
       '<div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
       (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-      (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+      (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
     html += shown.length ? shown.map(itemRow).join('')
       : '<div class="state"><div class="big">해당 기간에 결과가 없습니다.</div><div class="small">기간을 넓히거나 다른 키워드로 조회해 보세요.</div></div>';
     contentEl.innerHTML = html;
@@ -331,7 +331,7 @@ function render() {
     : periodLabel() + ' · ' + arr.length + ' ARTICLES';
   let html = '<div class="section-bar" translate="no"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
     (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-    (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+    (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
   html += shown.length ? shown.map(itemRow).join('')
     : '<div class="state"><div class="big">해당 기간에 수집된 기사가 없습니다.</div><div class="small">기간을 넓혀 보세요.</div></div>';
   contentEl.innerHTML = html;
@@ -347,14 +347,14 @@ periodEl.addEventListener('click', e => {
     customRange.classList.add('show'); periodDays = 'custom';
     if (!dateTo.value) dateTo.value = fmtDate(0);
     if (!dateFrom.value) dateFrom.value = fmtDate(15);
-  } else { customRange.classList.remove('show'); periodDays = parseInt(v, 10); Object.keys(CACHE).forEach(k=>delete CACHE[k]); fetchAndRender(activeTab); }
+  } else { customRange.classList.remove('show'); periodDays = parseInt(v, 10); Object.keys(CACHE).forEach(k=>delete CACHE[k]); refetchAll(); }
 });
 applyRange.onclick = () => {
   var todayStr = TODAY.toISOString().slice(0,10);
   if (dateFrom.value && dateFrom.value > todayStr) { alert('시작일은 오늘(' + todayStr + ') 이후로 지정할 수 없습니다.'); return; }
   if (dateTo.value && dateTo.value > todayStr) { alert('종료일은 오늘(' + todayStr + ') 이후로 지정할 수 없습니다.'); return; }
   if (dateFrom.value && dateTo.value && dateFrom.value > dateTo.value) { alert('시작일이 종료일보다 늦습니다. 다시 확인해 주세요.'); return; }
-  customFrom = dateFrom.value || null; customTo = dateTo.value || null; Object.keys(CACHE).forEach(k=>delete CACHE[k]); fetchAndRender(activeTab);
+  customFrom = dateFrom.value || null; customTo = dateTo.value || null; Object.keys(CACHE).forEach(k=>delete CACHE[k]); refetchAll();
 };
 
 /* ---- 임시 조회 ----
@@ -388,6 +388,16 @@ searchBtn.onclick = doSearch;
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
 footerEl.innerHTML = '<span translate="no">수집 방식: Google News RSS 실시간 수집<br>제외 매체: WSJ, Bloomberg, FT, Nikkei, NYT 등 유료 구독 매체<br>기사 제목은 원문 언어로 표시 · 제목 클릭 시 원문 기사로 이동<br>기간 요약용 복사: 수집 기사 링크와 요약 프롬프트를 클립보드에 복사합니다</span>';
+
+/* 기간 변경 시 전체 탭 재수집 — 활성 탭 먼저, 나머지 병렬 */
+async function refetchAll() {
+  await fetchAndRender(activeTab);
+  const others = COMPANIES.filter(c => c !== activeTab);
+  await Promise.all(others.map(async c => {
+    try { await fetchArticles(c); } catch(e) { console.warn(c, e); }
+    renderTabs();
+  }));
+}
 
 /* 페이지 로딩 시 전체 탭 기사 수 미리 수집 후 탭 숫자 갱신 */
 async function prefetchAll() {
