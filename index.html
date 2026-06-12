@@ -79,6 +79,9 @@
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: var(--paper); border: 1px solid var(--ink); transition: all .12s; }
   .more-btn:hover { background: var(--ink); color: var(--paper); }
+  .copy-guide { font-size: 12px; color: var(--ink-faint); margin-top: 6px; line-height: 1.6;
+    padding: 8px 12px; border-left: 2px solid #1a56db; background: var(--paper-dim); }
+  .copy-guide strong { color: var(--ink-soft); font-weight: 600; }
   .summary-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
     font-family: inherit; font-size: 12.5px; font-weight: 600; color: #ffffff;
     background: #1a56db; border: 1px solid #1a56db; padding: 7px 14px; transition: opacity .12s; }
@@ -101,7 +104,7 @@
       <div class="title">고객사 동향 모니터링</div>
       <div class="meta" id="updated">—</div>
     </div>
-    <div class="subtitle">고객사 최신 기사 자동 수집 - 신사업팀(추현진 배포)</div>
+    <div class="subtitle">고객사 최신 기사 자동 수집 — 신사업팀(추현진 배포)</div>
   </header>
 
   <nav class="tabs" id="tabs"></nav>
@@ -119,10 +122,10 @@
       <button class="apply" id="applyRange">적용</button>
     </div>
     <div class="searchbar">
-      <input type="text" id="searchInput" placeholder="키워드 임시 조회 (예: 경쟁사명, 특정 이슈)">
+      <input type="text" id="searchInput" placeholder="임시 조회 (기업명)">
       <button id="searchBtn">조회</button>
     </div>
-    <div class="note" id="searchNote">고정 고객사 외 키워드를 입력하면 위 기간 기준으로 임시 조회합니다. 결과는 저장되지 않습니다.</div>
+    <div class="note" id="searchNote">고정 탭 외 기업을 조회할 때 사용합니다. 기업명을 입력하면 설정된 기간 기준으로 기사를 수집합니다. 결과는 저장되지 않습니다.</div>
   </div>
 
   <main id="content"></main>
@@ -313,7 +316,8 @@ function render() {
       : periodLabel() + ' · ' + arr.length + ' ARTICLES';
     let html = '<div class="section-bar"><h2>' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
       '<div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
-      (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>';
+      (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
+      (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 사용 중인 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
     html += shown.length ? shown.map(itemRow).join('')
       : '<div class="state"><div class="big">해당 기간에 결과가 없습니다.</div><div class="small">기간을 넓히거나 다른 키워드로 조회해 보세요.</div></div>';
     contentEl.innerHTML = html;
@@ -326,7 +330,8 @@ function render() {
     ? periodLabel() + ' · ' + shown.length + ' / ' + arr.length + '건'
     : periodLabel() + ' · ' + arr.length + ' ARTICLES';
   let html = '<div class="section-bar"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
-    (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>';
+    (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
+    (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 사용 중인 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
   html += shown.length ? shown.map(itemRow).join('')
     : '<div class="state"><div class="big">해당 기간에 수집된 기사가 없습니다.</div><div class="small">기간을 넓혀 보세요.</div></div>';
   contentEl.innerHTML = html;
@@ -384,9 +389,10 @@ searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch()
 
 footerEl.innerHTML = '데이터: 샘플 (스카이디오 항목은 2026-06 실제 수집 사례 · 나머지는 배포 시 실시간 수집)<br>' +
   '매체 정책: 무료 접근 매체 전체 표시 · 주요 페이월 매체만 제외 (<span class="src-list">WSJ, Bloomberg, FT, Nikkei, NYT 등</span>)<br>' +
-  'Google News RSS 실시간 수집 · 주요 페이월 매체 제외 (WSJ, Bloomberg, FT, Nikkei, NYT 등)<br>' +
-  '기사 제목은 원문 그대로 표시 · 클릭 시 원문 기사로 연결<br>' +
-  '"기간 요약용 복사" → 생성형 AI에 붙여넣기로 기간 동향 요약 가능';
+  '수집 방식: Google News RSS 실시간 수집<br>' +
+  '제외 매체: 유료 구독 매체 제외 (WSJ, Bloomberg, FT, Nikkei, NYT 등)<br>' +
+  '기사 제목은 원문 언어로 표시 · 제목 클릭 시 원문 기사로 이동<br>' +
+  '기간 요약용 복사 버튼: 수집 기사 링크와 요약 프롬프트를 클립보드에 복사합니다';
 
 /* 페이지 로딩 시 전체 탭 기사 수 미리 수집 후 탭 숫자 갱신 */
 async function prefetchAll() {
