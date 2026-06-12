@@ -317,7 +317,7 @@ function render() {
     let html = '<div class="section-bar" translate="no"><h2>' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
       '<div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
       (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-      (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+      (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
     html += shown.length ? shown.map(itemRow).join('')
       : '<div class="state"><div class="big">해당 기간에 결과가 없습니다.</div><div class="small">기간을 넓히거나 다른 키워드로 조회해 보세요.</div></div>';
     contentEl.innerHTML = html;
@@ -331,7 +331,7 @@ function render() {
     : periodLabel() + ' · ' + arr.length + ' ARTICLES';
   let html = '<div class="section-bar" translate="no"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
     (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-    (shown.length ? '<div class="copy-guide"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+    (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
   html += shown.length ? shown.map(itemRow).join('')
     : '<div class="state"><div class="big">해당 기간에 수집된 기사가 없습니다.</div><div class="small">기간을 넓혀 보세요.</div></div>';
   contentEl.innerHTML = html;
