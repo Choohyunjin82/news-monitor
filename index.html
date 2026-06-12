@@ -141,14 +141,14 @@
    - 현재: 샘플 데이터로 동작. 샘플은 2026-06 실제 수집 사례를 반영.
    ============================================================ */
 
-const COMPANIES = ["스카이디오", "엔비디아", "구글", "테슬라", "빈패스트", "보스턴다이내믹스"];
+const COMPANIES = ["엔비디아", "테슬라", "스카이디오", "구글", "빈패스트", "보스턴다이내믹스"];
 
 /* 회사별 Google News 검색어 — 노이즈 최소화를 위해 정교하게 설정 */
 const QUERY_MAP = {
-  "스카이디오":     "Skydio",
   "엔비디아":       "NVIDIA",
-  "구글":           "Google",
   "테슬라":         "Tesla",
+  "스카이디오":     "Skydio",
+  "구글":           "Google",
   "빈패스트":       "VinFast",
   "보스턴다이내믹스": "Boston Dynamics"
 };
@@ -247,7 +247,7 @@ function renderTabs() {
 }
 function itemRow(a) {
   return '<div class="item"><div class="item-src" translate="no">' + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener" lang="en">' + (a.title || '제목 없음') + '</a></div></div>';
+    '</div><div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
@@ -336,6 +336,10 @@ function render() {
     : '<div class="state"><div class="big">해당 기간에 수집된 기사가 없습니다.</div><div class="small">기간을 넓혀 보세요.</div></div>';
   contentEl.innerHTML = html;
   renderMore(arr.length, shown.length);
+  /* 크롬 번역 재트리거: 동적 콘텐츠 삽입 후 번역 엔진이 재스캔하도록 유도 */
+  contentEl.removeAttribute('lang');
+  void contentEl.offsetHeight;
+  contentEl.setAttribute('lang', 'en');
 }
 
 periodEl.addEventListener('click', e => {
