@@ -79,14 +79,14 @@
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: var(--paper); border: 1px solid var(--ink); transition: all .12s; }
   .more-btn:hover { background: var(--ink); color: var(--paper); }
-  .copy-guide { font-size: 12px; color: var(--ink-faint); margin-top: 6px; line-height: 1.6;
-    padding: 8px 12px; border-left: 2px solid #1a56db; background: var(--paper-dim); }
-  .copy-guide strong { color: var(--ink-soft); font-weight: 600; }
+  .copy-guide { font-size: 13.5px; color: #ffffff; margin-top: 8px; line-height: 1.7;
+    padding: 11px 15px; border: 1px solid #1a56db; border-radius: 4px; background: #1a56db; }
+  .copy-guide strong { color: #ffffff; font-weight: 700; }
   .summary-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
     font-family: inherit; font-size: 12.5px; font-weight: 600; color: #ffffff;
-    background: #1a56db; border: 1px solid #1a56db; padding: 7px 14px; transition: opacity .12s; }
+    background: #e24b4a; border: 1px solid #e24b4a; padding: 7px 14px; transition: opacity .12s; border-radius: 4px; }
   .summary-btn:hover { opacity: .85; }
-  .summary-btn.copied { background: #ffffff; color: #1a56db; }
+  .summary-btn.copied { background: #ffffff; color: #e24b4a; }
   footer { margin-top: 40px; padding: 22px 0 40px; border-top: 1px solid var(--line); font-size: 11px;
     color: var(--ink-faint); font-family: "SF Mono", ui-monospace, monospace; line-height: 1.7; }
   footer .src-list { color: var(--ink-soft); }
@@ -112,9 +112,9 @@
   <div class="controls" translate="no">
     <div class="ctrl-label">수집 기간</div>
     <div class="period" id="period">
-      <button class="chip" data-days="1">최근 1일</button>
-      <button class="chip active" data-days="7">최근 7일</button>
-      <button class="chip" data-days="30">최근 30일</button>
+      <button class="chip active" data-days="1">최근 1일</button>
+      <button class="chip" data-days="5">최근 5일</button>
+      <button class="chip" data-days="10">최근 10일</button>
       <button class="chip" data-days="custom">직접 지정</button>
     </div>
     <div class="custom-range" id="customRange">
@@ -192,7 +192,7 @@ async function fetchArticles(company) {
 
 let activeTab = COMPANIES[0];
 let tempResult = null;
-let periodDays = 7;
+let periodDays = 1;
 let customFrom = null, customTo = null;
 
 const tabsEl = document.getElementById('tabs');
@@ -317,7 +317,7 @@ function render() {
     let html = '<div class="section-bar" translate="no"><h2>' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
       '<div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
       (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-      (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 사용 중인 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+      (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
     html += shown.length ? shown.map(itemRow).join('')
       : '<div class="state"><div class="big">해당 기간에 결과가 없습니다.</div><div class="small">기간을 넓히거나 다른 키워드로 조회해 보세요.</div></div>';
     contentEl.innerHTML = html;
@@ -331,7 +331,7 @@ function render() {
     : periodLabel() + ' · ' + arr.length + ' ARTICLES';
   let html = '<div class="section-bar" translate="no"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
     (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
-    (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 사용 중인 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
+    (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
   html += shown.length ? shown.map(itemRow).join('')
     : '<div class="state"><div class="big">해당 기간에 수집된 기사가 없습니다.</div><div class="small">기간을 넓혀 보세요.</div></div>';
   contentEl.innerHTML = html;
@@ -346,7 +346,7 @@ periodEl.addEventListener('click', e => {
   if (v === 'custom') {
     customRange.classList.add('show'); periodDays = 'custom';
     if (!dateTo.value) dateTo.value = fmtDate(0);
-    if (!dateFrom.value) dateFrom.value = fmtDate(7);
+    if (!dateFrom.value) dateFrom.value = fmtDate(15);
   } else { customRange.classList.remove('show'); periodDays = parseInt(v, 10); Object.keys(CACHE).forEach(k=>delete CACHE[k]); fetchAndRender(activeTab); }
 });
 applyRange.onclick = () => {
