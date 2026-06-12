@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -247,7 +247,7 @@ function renderTabs() {
 }
 function itemRow(a) {
   return '<div class="item"><div class="item-src">' + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
+    '</div><div class="item-title"><a href="' + a.url + '" target="_blank" rel="noopener" lang="en" translate="yes">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
