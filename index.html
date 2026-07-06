@@ -465,6 +465,19 @@ function renderSummaryBox(state) {
       '<div class="summary-sources">' + titleOnlyHtml + '</div>';
   }
 
+  if (d.debug && d.debug.length) {
+    html +=
+      '<div class="summary-section-label" style="margin-top:16px;">진단 정보 (본문 수집 시도 상세)</div>' +
+      '<div class="summary-debug">' + d.debug.map(x =>
+        escapeHtml((x.url || '').slice(0, 60)) + '<br>' +
+        '→ HTTP ' + (x.httpStatus != null ? x.httpStatus : '-') +
+        ' · 최종주소: ' + escapeHtml((x.finalUrl || '-').slice(0, 60)) +
+        ' · 추출길이: ' + (x.textLength != null ? x.textLength : '-') + '자' +
+        (x.decodeAttempted != null ? ' · 구글링크디코딩: ' + (x.decodedUrl ? '성공(' + escapeHtml(String(x.decodedUrl).slice(0,50)) + ')' : '실패') : '') +
+        (x.note ? ' · ' + escapeHtml(x.note) : '')
+      ).join('<hr>') + '</div>';
+  }
+
   html += '<button class="summary-close" onclick="closeSummaryBox()">닫기</button>';
   box.innerHTML = html;
 }
