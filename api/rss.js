@@ -4,12 +4,12 @@
  * 네이버 API 키(NAVER_CLIENT_ID/SECRET) 미설정 시 구글 두 경로만 사용
  *
  * 기간별 기사 수 상한 (병합 후 전체 기준):
- *   1일  → 5건
- *   5일  → 10건
- *   10일 → 15건
- *   직접 지정 / 기타 → 30건
+ *   1일  → 10건
+ *   5일  → 20건
+ *   10일 → 30건
+ *   직접 지정 / 기타 → 50건
  *
- * 정렬 우선순위: 신뢰 매체 가중치 → 발행일 최신순
+ * 정렬 우선순위: 최신순(발행일) → 동일 날짜 시 신뢰 매체 가중치
  * 제외: 페이월 매체, 개인 블로그, PR 배포 매체, 자사 뉴스룸(발표 자료)
  * 중복 제거: 제목 앞 30자 기준 유사 기사 1건만 유지 (신뢰도 높은 쪽 우선)
  */
@@ -62,12 +62,12 @@ const BLOCKED = [
 
 /* ── 기간별 상한 ────────────────────────────────────────────── */
 function getLimit(from, to) {
-  if (!from || !to) return 30;
+  if (!from || !to) return 50;
   const days = Math.round((new Date(to) - new Date(from)) / 86400000);
-  if (days <= 1)  return 5;
-  if (days <= 5)  return 10;
-  if (days <= 10) return 15;
-  return 30;
+  if (days <= 1)  return 10;
+  if (days <= 5)  return 20;
+  if (days <= 10) return 30;
+  return 50;
 }
 
 /* ── 매체 가중치 ────────────────────────────────────────────── */
@@ -278,10 +278,10 @@ export default async function handler(req, res) {
       }
     }
 
-    /* 정렬: score 내림차순 → 최신순 */
+    /* 정렬: 최신순(발행일) 우선 → 동일 날짜(daysAgo)일 경우 신뢰도 점수 높은 순 */
     const sorted = [...seen.values()].sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.daysAgo - b.daysAgo;
+      if (a.daysAgo !== b.daysAgo) return a.daysAgo - b.daysAgo;
+      return b.score - a.score;
     });
 
     /* 상한 적용 */
