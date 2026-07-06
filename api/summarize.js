@@ -69,23 +69,51 @@ async function fetchWithTimeout(url, timeoutMs) {
 }
 
 async function crawlArticle(url) {
+  const debug = { url, finalUrl: null, httpStatus: null, textLength: 0, note: '' };
+
   let response = await fetchWithTimeout(url, CRAWL_TIMEOUT_MS);
-  if (!response || !response.ok) return null;
+  if (!response) {
+    debug.note = '접속 실패 또는 타임아웃(8초 초과)';
+    return { text: null, debug };
+  }
+  debug.httpStatus = response.status;
+  debug.finalUrl = response.url;
+
+  if (!response.ok) {
+    debug.note = 'HTTP 오류 응답';
+    return { text: null, debug };
+  }
 
   let html = await response.text();
 
   /* 구글 뉴스 리디렉션 페이지인 경우, 실제 기사 주소를 찾아 한 번 더 요청 */
   const isGoogleHost = response.url && response.url.includes('news.google.com');
+  debug.isGoogleRedirectPage = isGoogleHost;
   if (isGoogleHost) {
-    const target = findRedirectTarget(html);
-    if (target) {
-      const second = await fetchWithTimeout(target, CRAWL_TIMEOUT_MS);
-      if (second && second.ok) html = await second.text();
+    const redirectTarget = findRedirectTarget(html);
+    debug.redirectTargetFound = !!redirectTarget;
+    if (redirectTarget) {
+      const second = await fetchWithTimeout(redirectTarget, CRAWL_TIMEOUT_MS);
+      if (second && second.ok) {
+        html = await second.text();
+        debug.finalUrl = second.url;
+        debug.httpStatus = second.status;
+      } else {
+        debug.note = '리디렉션 대상 재요청 실패';
+      }
+    } else {
+      debug.note = '구글 리디렉션 페이지에서 실제 주소를 찾지 못함';
     }
   }
 
   const text = extractBody(html);
-  return text.length >= 200 ? text : null; // 200자 미만은 추출 실패로 간주
+  debug.textLength = text.length;
+
+  if (text.length < 200) {
+    debug.note = debug.note || '본문 추출 길이 부족(200자 미만) — 페이월/봇 차단/추출 실패 중 하나로 추정';
+    return { text: null, debug };
+  }
+  return { text, debug };
 }
 
 export default async function handler(req, res) {
@@ -110,9 +138,13 @@ export default async function handler(req, res) {
 
   const results = await Promise.allSettled(target.map(a => crawlArticle(a.url)));
   const successItems = [];
+  const debugList = [];
   results.forEach((r, i) => {
-    if (r.status === 'fulfilled' && r.value) {
-      successItems.push({ ...target[i], body: r.value });
+    if (r.status === 'fulfilled') {
+      debugList.push(r.value.debug);
+      if (r.value.text) successItems.push({ ...target[i], body: r.value.text });
+    } else {
+      debugList.push({ url: target[i].url, note: '예외 발생: ' + String(r.reason) });
     }
   });
   const successCount = successItems.length;
@@ -123,6 +155,7 @@ export default async function handler(req, res) {
       totalCount,
       successCount,
       reason: '본문 수집 성공 건수 부족',
+      debug: debugList,
     });
   }
 
@@ -168,6 +201,7 @@ export default async function handler(req, res) {
       successCount,
       summary,
       sources: successItems.map(a => ({ title: a.title, source: a.source, date: a.date, url: a.url })),
+      debug: debugList,
     });
 
   } catch (err) {
