@@ -15,7 +15,7 @@
 /* ── 신뢰 매체 가중치 (높을수록 우선) ─────────────────────── */
 const TRUSTED = {
   // 1순위 — 통신사
-  'reuters':    100, 'ap':         100, 'associated press': 100,
+  'ap':         100, 'associated press': 100,
   'yonhap':     100, 'afp':        100,
   // 2순위 — 주요 경제·기술 매체
   'cnbc':        90, 'bloomberg':   90, 'financial times':  90,
@@ -34,7 +34,8 @@ const TRUSTED = {
 
 /* ── 차단 목록 ──────────────────────────────────────────────── */
 const BLOCKED = [
-  // 페이월
+  // 페이월 / 구독 필요
+  'reuters', 'reuters.com',
   'wall street journal', 'wsj.com', 'nytimes', 'new york times',
   'ft.com', 'economist', 'the information', 'barrons',
   // PR 배포 / 자사 뉴스룸
