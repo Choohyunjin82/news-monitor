@@ -114,10 +114,10 @@
   <div class="controls" translate="no">
     <div class="ctrl-label">수집 기간</div>
     <div class="period" id="period">
-      <button class="chip active" data-days="1">최근 1일</button>
-      <button class="chip" data-days="5">최근 5일</button>
-      <button class="chip" data-days="10">최근 10일</button>
-      <button class="chip" data-days="custom">직접 지정</button>
+      <button class="chip active" data-days="1" translate="no">최근 1일</button>
+      <button class="chip" data-days="5" translate="no">최근 5일</button>
+      <button class="chip" data-days="10" translate="no">최근 10일</button>
+      <button class="chip" data-days="custom" translate="no">직접 지정</button>
     </div>
     <div class="custom-range" id="customRange">
       <input type="date" id="dateFrom"><span>~</span><input type="date" id="dateTo">
@@ -274,14 +274,14 @@ function renderTabs() {
   COMPANIES.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'tab' + (c === activeTab && !tempResult ? ' active' : '');
-    btn.innerHTML = c + '<span class="cnt">' + visibleArticles(c).length + '</span>';
+    btn.innerHTML = '<span translate="no">' + c + '</span><span class="cnt">' + visibleArticles(c).length + '</span>';
     btn.onclick = () => { tempResult = null; activeTab = c; shownCount = PAGE_SIZE; searchNote.className = 'note'; delete CACHE[c]; fetchAndRender(c); };
     tabsEl.appendChild(btn);
   });
 }
 function itemRow(a) {
   return '<div class="item"><div class="item-src" translate="no">' + (isTrusted(a.source) ? '<span class="trusted-badge">✓</span> ' : '') + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div><div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
+    '</div></div><div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
@@ -327,7 +327,7 @@ function fallbackCopy(text) {
 /* 탭 클릭·기간 변경 시: 수집 → 렌더 */
 async function fetchAndRender(company) {
   contentEl.innerHTML = '<div class="state" translate="no"><div class="spinner"></div>' +
-    '<div class="big">' + company + ' 기사 수집 중...</div>' +
+    '<div class="big"><span translate="no">' + company + '</span> 기사 수집 중...</div>' +
     '<div class="small">GOOGLE NEWS RSS → 페이월 매체 제외</div></div>';
   await fetchArticles(company);
   render();
@@ -350,7 +350,7 @@ function render() {
     const tagTxt = arr.length > shown.length
       ? periodLabel() + ' · ' + shown.length + ' / ' + arr.length + '건'
       : periodLabel() + ' · ' + arr.length + ' ARTICLES';
-    let html = '<div class="section-bar" translate="no"><h2>' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
+    let html = '<div class="section-bar"><h2 translate="no">' + tempResult.keyword + '<span class="temp-flag">임시 조회</span></h2>' +
       '<div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
       (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
       (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
@@ -368,7 +368,7 @@ function render() {
   const tagTxt = totalRaw > limitVal
     ? periodLabel() + ' · ' + arr.length + '건 (전체 ' + totalRaw + '건 중 상위 ' + limitVal + '건 수집)'
     : periodLabel() + ' · ' + arr.length + '건';
-  let html = '<div class="section-bar" translate="no"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
+  let html = '<div class="section-bar"><h2 translate="no">' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;" translate="no"><span class="tag">' + tagTxt + '</span>' +
     (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
     (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
   html += shown.length ? shown.map(itemRow).join('')
