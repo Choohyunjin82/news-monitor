@@ -75,6 +75,8 @@
   .spinner { width: 22px; height: 22px; border: 2px solid var(--line); border-top-color: var(--ink);
     border-radius: 50%; margin: 0 auto 16px; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .trusted-badge { display: inline-block; font-size: 10px; color: #1a56db;
+    font-weight: 700; margin-right: 3px; }
   .more-btn { display: block; width: 100%; margin-top: 20px; padding: 13px; cursor: pointer;
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: var(--paper); border: 1px solid var(--ink); transition: all .12s; }
@@ -156,10 +158,42 @@ const QUERY_MAP = {
 const PAGE_SIZE = 10;  // 더보기 1회당 표시 건수
 let shownCount = PAGE_SIZE;  // 현재 화면에 표시 중인 건수
 
-/* 차단 목록 — 페이월/로그인 매체만 제외. 소문자 부분일치로 판정. */
+/* 차단 목록 1 — 페이월/로그인 매체 */
 const BLOCKED_SOURCES = [
   "wall street journal", "wsj", "bloomberg", "financial times", "nikkei",
   "the economist", "the information", "barron", "new york times", "nytimes"
+];
+
+/* 차단 목록 2 — 기업 공식 자료실 도메인 (홍보 목적, 제3자 검증 없음) */
+const BLOCKED_DOMAINS = [
+  "nvidianews.nvidia.com", "ir.tesla.com", "tesla.com/blog",
+  "newsroom.google.com", "blog.google", "about.google",
+  "skydio.com/blog", "skydio.com/press",
+  "vinfast.com/news", "bostondynamics.com/news",
+  "prnewswire.com", "businesswire.com", "globenewswire.com",
+  "accesswire.com", "einpresswire.com"
+];
+
+/* 신뢰 매체 목록 — 상단 우선 표시 + 기간 요약용 복사 대상 */
+const TRUSTED_SOURCES = [
+  /* 통신사 */
+  "reuters", "ap", "associated press", "afp",
+  /* 경제·비즈니스 */
+  "cnbc", "fortune", "business insider", "financial post",
+  /* 기술 전문 */
+  "techcrunch", "the verge", "wired", "ars technica",
+  /* 드론 전문 */
+  "dronexl", "dronedj", "suas news", "fedscoop", "tectonic defense",
+  /* 자동차·EV */
+  "electrek", "automotive news", "insideevs",
+  /* 데이터센터 */
+  "data center dynamics", "dcd", "the register",
+  /* 방산·산업 */
+  "defense news", "manufacturing today", "manufacturing dive",
+  /* 일본 */
+  "nhk world", "japan times",
+  /* 한국 */
+  "yonhap", "korea herald"
 ];
 
 /* 샘플 데이터 — 2026-06 실제 수집 사례 반영. 배포 시 RSS 수집 결과로 교체.
@@ -181,7 +215,7 @@ async function fetchArticles(company) {
   try {
     const res  = await fetch(url);
     const data = await res.json();
-    const articles = (data.articles || []).filter(a => !isBlocked(a.source));
+    const articles = (data.articles || []).filter(a => !isBlocked(a.source, a.url));
     CACHE[company] = { articles, fetchedAt: new Date(), key: cacheKey };
     return articles;
   } catch(e) {
@@ -227,12 +261,12 @@ function periodLabel() {
   return '최근 ' + periodDays + '일';
 }
 function visibleArticles(company) {
-  /* 배포형: CACHE에서 조회. render() 전에 fetchAndRender()로 먼저 수집. */
   const cached = CACHE[company];
   if (!cached) return [];
-  return cached.articles
-    .filter(a => inPeriod(a.daysAgo))
+  const filtered = cached.articles
+    .filter(a => !isBlocked(a.source, a.url) && inPeriod(a.daysAgo))
     .sort(function(x, y) { return x.daysAgo - y.daysAgo; });
+  return sortArticles(filtered);
 }
 
 function renderTabs() {
@@ -246,15 +280,17 @@ function renderTabs() {
   });
 }
 function itemRow(a) {
-  return '<div class="item"><div class="item-src" translate="no">' + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
+  return '<div class="item"><div class="item-src" translate="no">' + (isTrusted(a.source) ? '<span class="trusted-badge">✓</span> ' : '') + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
     '</div><div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
-  var subject, arr;
+  var subject, arr, copyArr;
   if (tempResult) { subject = tempResult.keyword + ' (임시 조회)'; arr = tempResult.articles.filter(function(a){return inPeriod(a.daysAgo);}); }
   else { subject = activeTab; arr = visibleArticles(activeTab); }
-  arr = arr.slice(0, shownCount);
+  /* 복사 대상: 신뢰 매체 우선 상위 10건 */
+  var trustedArr = arr.filter(function(a){ return isTrusted(a.source); });
+  copyArr = (trustedArr.length > 0 ? trustedArr : arr).slice(0, 10);
 
   var lines = [];
   lines.push('[기간 동향 종합 요약 요청]');
@@ -268,8 +304,8 @@ function buildSummaryText() {
   lines.push('- 한국어로 간결하게, 핵심 위주로 정리할 것');
   lines.push('- 가능하면 주제별로 묶어 정리하고, 각 항목 끝에 출처를 표기할 것');
   lines.push('');
-  lines.push('기사 목록 (' + arr.length + '건):');
-  arr.forEach(function(a, i) {
+  lines.push('기사 목록 (' + copyArr.length + '건, 신뢰 매체 우선):');
+  copyArr.forEach(function(a, i) {
     lines.push((i + 1) + '. ' + (a.title || '제목 없음') + ' — ' + a.source + ' (' + fmtDate(a.daysAgo) + ')');
     lines.push('   ' + a.url);
   });
@@ -326,9 +362,12 @@ function render() {
   }
   const arr = visibleArticles(activeTab);
   const shown = arr.slice(0, shownCount);
-  const tagTxt = arr.length > shown.length
-    ? periodLabel() + ' · ' + shown.length + ' / ' + arr.length + '건'
-    : periodLabel() + ' · ' + arr.length + ' ARTICLES';
+  const cached = CACHE[activeTab];
+  const totalRaw = cached ? cached.total : arr.length;
+  const limitVal = cached ? cached.limit : arr.length;
+  const tagTxt = totalRaw > limitVal
+    ? periodLabel() + ' · ' + arr.length + '건 (전체 ' + totalRaw + '건 중 상위 ' + limitVal + '건 수집)'
+    : periodLabel() + ' · ' + arr.length + '건';
   let html = '<div class="section-bar" translate="no"><h2>' + activeTab + '</h2><div style="display:flex;align-items:center;gap:12px;"><span class="tag">' + tagTxt + '</span>' +
     (shown.length ? '<button class="summary-btn" onclick="copySummaryPrompt()">기간 요약용 복사</button>' : '') + '</div></div>' +
     (shown.length ? '<div class="copy-guide" translate="no"><strong>기간 요약용 복사</strong> 버튼 클릭 시 수집 기사 링크와 요약 프롬프트가 클립보드에 복사됩니다. 생성형 AI(Gemini, ChatGPT 등)에 붙여넣기하면 해당 기간 기사를 자동 요약합니다.</div>' : '');
@@ -379,7 +418,7 @@ function doSearch() {
   fetch('/api/rss?q=' + q + '&from=' + from + '&to=' + to)
     .then(r => r.json())
     .then(data => {
-      const articles = (data.articles || []).filter(a => !isBlocked(a.source));
+      const articles = (data.articles || []).filter(a => !isBlocked(a.source, a.url));
       tempResult = { keyword: kw, articles };
       searchNote.className = 'note temp'; searchBtn.disabled = false; render();
     })
