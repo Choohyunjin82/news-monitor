@@ -39,9 +39,17 @@ function extractBody(html) {
   return text.slice(0, BODY_CHAR_LIMIT);
 }
 
-async function crawlArticle(url) {
+function findRedirectTarget(html) {
+  const meta = html.match(/<meta[^>]+http-equiv=["']refresh["'][^>]*content=["']\s*\d+\s*;\s*url=([^"'>]+)["']/i);
+  if (meta) return meta[1];
+  const canon = html.match(/data-n-au=["']([^"']+)["']/i); // 구글 뉴스 일부 페이지의 실제 링크 속성
+  if (canon) return canon[1];
+  return null;
+}
+
+async function fetchWithTimeout(url, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CRAWL_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       redirect: 'follow',
@@ -53,14 +61,31 @@ async function crawlArticle(url) {
       },
     });
     clearTimeout(timer);
-    if (!response.ok) return null;
-    const html = await response.text();
-    const text = extractBody(html);
-    return text.length >= 200 ? text : null; // 200자 미만은 추출 실패로 간주
+    return response;
   } catch (e) {
     clearTimeout(timer);
     return null;
   }
+}
+
+async function crawlArticle(url) {
+  let response = await fetchWithTimeout(url, CRAWL_TIMEOUT_MS);
+  if (!response || !response.ok) return null;
+
+  let html = await response.text();
+
+  /* 구글 뉴스 리디렉션 페이지인 경우, 실제 기사 주소를 찾아 한 번 더 요청 */
+  const isGoogleHost = response.url && response.url.includes('news.google.com');
+  if (isGoogleHost) {
+    const target = findRedirectTarget(html);
+    if (target) {
+      const second = await fetchWithTimeout(target, CRAWL_TIMEOUT_MS);
+      if (second && second.ok) html = await second.text();
+    }
+  }
+
+  const text = extractBody(html);
+  return text.length >= 200 ? text : null; // 200자 미만은 추출 실패로 간주
 }
 
 export default async function handler(req, res) {
