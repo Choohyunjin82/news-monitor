@@ -2,10 +2,15 @@
   "version": 2,
   "builds": [
     { "src": "api/rss.js", "use": "@vercel/node" },
+    { "src": "api/summarize.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/rss", "dest": "/api/rss.js" },
+    { "src": "/api/summarize", "dest": "/api/summarize.js" },
     { "src": "/(.*)",    "dest": "/index.html"  }
-  ]
+  ],
+  "functions": {
+    "api/summarize.js": { "maxDuration": 30 }
+  }
 }
