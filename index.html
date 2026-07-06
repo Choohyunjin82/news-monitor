@@ -143,6 +143,17 @@
    - 현재: 샘플 데이터로 동작. 샘플은 2026-06 실제 수집 사례를 반영.
    ============================================================ */
 
+/* 신뢰 매체 판별 함수 */
+function isTrusted(source) {
+  if (!source) return false;
+  const s = source.toLowerCase();
+  const trustedList = ['ap', 'associated press', 'yonhap', 'afp', 'cnbc', 'bloomberg',
+    'techcrunch', 'the verge', 'wired', 'bbc', 'nhk world', 'dronexl', 'electrek',
+    'fedscoop', 'dronelife', 'dronedj', 'datacenterdynamics', 'engadget',
+    'aviation week', 'manufacturing today', 'defense post'];
+  return trustedList.some(t => s.includes(t));
+}
+
 const COMPANIES = ["엔비디아", "테슬라", "스카이디오", "구글", "빈패스트", "보스턴다이내믹스"];
 
 /* 회사별 Google News 검색어 — 노이즈 최소화를 위해 정교하게 설정 */
@@ -292,7 +303,7 @@ function buildSummaryText() {
   else { subject = activeTab; arr = visibleArticles(activeTab); }
   /* 복사 대상: 신뢰 매체 우선 상위 10건 */
   var trustedArr = arr.filter(function(a){ return isTrusted(a.source); });
-  copyArr = (trustedArr.length > 0 ? trustedArr : arr).slice(0, 10);
+  var copyArr = (trustedArr.length > 0 ? trustedArr : arr).slice(0, 10);
 
   var lines = [];
   lines.push('[기간 동향 종합 요약 요청]');
