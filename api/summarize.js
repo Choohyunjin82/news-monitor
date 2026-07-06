@@ -47,6 +47,26 @@ function findRedirectTarget(html) {
   return null;
 }
 
+/* ── 구글 뉴스 링크 토큰 디코딩 ─────────────────────────────────
+   news.google.com/rss/articles/{토큰} 형태의 링크는 토큰 자체가
+   원본 기사 주소를 인코딩한 데이터인 경우가 있다. base64 디코딩 후
+   바이트 안에서 http(s) 문자열을 찾아 추출한다. 실패할 수 있음
+   (구조가 다르거나 원본 URL이 그대로 담겨 있지 않은 경우). */
+function decodeGoogleNewsToken(url) {
+  const m = url.match(/\/rss\/articles\/([^/?]+)/);
+  if (!m) return null;
+  try {
+    let b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const buf = Buffer.from(b64, 'base64');
+    const str = buf.toString('latin1');
+    const found = str.match(/https?:\/\/[^\s"'<>\x00-\x1f]+/);
+    return found ? found[0] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function fetchWithTimeout(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -71,7 +91,21 @@ async function fetchWithTimeout(url, timeoutMs) {
 async function crawlArticle(url) {
   const debug = { url, finalUrl: null, httpStatus: null, textLength: 0, note: '' };
 
-  let response = await fetchWithTimeout(url, CRAWL_TIMEOUT_MS);
+  let targetUrl = url;
+  const isGoogleNewsLink = url.includes('news.google.com/rss/articles/');
+  if (isGoogleNewsLink) {
+    const decoded = decodeGoogleNewsToken(url);
+    debug.decodeAttempted = true;
+    debug.decodedUrl = decoded;
+    if (decoded) {
+      targetUrl = decoded;
+    } else {
+      debug.note = '구글 링크 토큰 디코딩 실패 — 원본 주소를 찾지 못함';
+      return { text: null, debug };
+    }
+  }
+
+  let response = await fetchWithTimeout(targetUrl, CRAWL_TIMEOUT_MS);
   if (!response) {
     debug.note = '접속 실패 또는 타임아웃(8초 초과)';
     return { text: null, debug };
@@ -86,7 +120,7 @@ async function crawlArticle(url) {
 
   let html = await response.text();
 
-  /* 구글 뉴스 리디렉션 페이지인 경우, 실제 기사 주소를 찾아 한 번 더 요청 */
+  /* 디코딩 없이 구글 페이지로 접속된 경우(위 디코딩 실패했으나 여기까지 온 경우는 없음, 방어 코드) */
   const isGoogleHost = response.url && response.url.includes('news.google.com');
   debug.isGoogleRedirectPage = isGoogleHost;
   if (isGoogleHost) {
