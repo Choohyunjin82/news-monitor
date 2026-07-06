@@ -83,6 +83,10 @@
   .summary-src-item a:hover { text-decoration: underline; }
   .summary-src-item .dot { margin: 0 6px; color: var(--ink-faint); }
   .summary-error { font-size: 13.5px; color: var(--ink-soft); padding: 14px 0; }
+  .summary-debug { font-family: monospace; font-size: 10.5px; color: var(--ink-faint);
+    line-height: 1.6; padding: 10px 12px; background: var(--paper-dim); border: 1px solid var(--line);
+    max-height: 260px; overflow-y: auto; word-break: break-all; }
+  .summary-debug hr { border: none; border-top: 1px solid var(--line); margin: 6px 0; }
   .summary-close, .summary-copy-fallback { appearance: none; cursor: pointer; font-family: inherit;
     font-size: 12px; font-weight: 600; background: var(--paper); color: var(--ink);
     border: 1px solid var(--ink); padding: 6px 14px; margin-top: 14px; margin-right: 8px; }
@@ -369,6 +373,7 @@ async function requestSummary() {
         message: (data && data.error) || '본문 수집 성공 건수가 부족하여 요약을 생성할 수 없습니다.',
         totalCount: data ? data.totalCount : null,
         successCount: data ? data.successCount : null,
+        debug: data ? data.debug : null,
       });
       return;
     }
@@ -409,8 +414,18 @@ function renderSummaryBox(state) {
     const countInfo = state.totalCount != null
       ? ' (전체 ' + state.totalCount + '건 중 ' + (state.successCount || 0) + '건 성공)'
       : '';
+    const debugHtml = (state.debug && state.debug.length)
+      ? '<div class="summary-debug">' + state.debug.map(d =>
+          escapeHtml((d.url || '').slice(0, 60)) + '<br>' +
+          '→ HTTP ' + (d.httpStatus != null ? d.httpStatus : '-') +
+          ' · 최종주소: ' + escapeHtml((d.finalUrl || '-').slice(0, 60)) +
+          ' · 추출길이: ' + (d.textLength != null ? d.textLength : '-') + '자' +
+          (d.note ? ' · ' + escapeHtml(d.note) : '')
+        ).join('<hr>') + '</div>'
+      : '';
     box.innerHTML =
       '<div class="summary-error">' + escapeHtml(state.message) + countInfo + '</div>' +
+      debugHtml +
       '<button class="summary-close" onclick="closeSummaryBox()">닫기</button>' +
       '<button class="summary-copy-fallback" onclick="copySummaryPrompt()">대신 링크 복사</button>';
     return;
