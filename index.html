@@ -280,8 +280,10 @@ function renderTabs() {
   });
 }
 function itemRow(a) {
-  return '<div class="item"><div class="item-src" translate="no">' + (isTrusted(a.source) ? '<span class="trusted-badge">✓</span> ' : '') + a.source + '<span class="dot">·</span>' + fmtDate(a.daysAgo) +
-    '</div></div><div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div></div>';
+  return '<div class="item">' +
+    '<div class="item-src" translate="no"><span translate="no">' + (a.source || '') + '</span><span class="dot">·</span>' + fmtDate(a.daysAgo) + '</div>' +
+    '<div class="item-title" lang="en" translate="yes"><a href="' + a.url + '" target="_blank" rel="noopener">' + (a.title || '제목 없음') + '</a></div>' +
+    '</div>';
 }
 function buildSummaryText() {
   // 현재 화면 컨텍스트(회사/키워드, 기간)와 표시 기사 목록을 취합
