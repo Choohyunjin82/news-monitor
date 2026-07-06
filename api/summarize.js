@@ -2,17 +2,21 @@
  * /api/summarize — 기사 본문 크롤링 + Gemini 요약 (Vercel 서버리스 함수)
  *
  * 절차:
- *   1. 전달받은 기사 URL 목록에 각각 접속하여 본문 텍스트 추출 시도
- *   2. 추출 실패 건은 제외하고, 성공한 기사만으로 요약 진행
- *   3. 성공 건수가 2건 미만이면 요약을 생성하지 않고 실패 사유 반환
- *   4. 성공 기사 본문을 모아 Gemini API(gemini-2.5-flash, 무료 티어)에 전달
+ *   1. 전달받은 기사 URL 전체(화면에 표시된 건수와 동일)에 대해 본문 수집 시도
+ *   2. 본문 확인된 기사만 Gemini에 전달하여 사실 기반 요약 생성
+ *   3. 본문 확인 실패한 기사는 요약에 포함하지 않고, 제목·매체·날짜만 별도 목록으로 반환
+ *      (추론에 의한 요약을 방지하기 위해 본문 미확인 기사는 AI 처리 대상에서 제외)
+ *   4. 본문 확인 건수가 0건이면 요약을 생성하지 않고 제목 목록만 반환
  *
  * 필요 환경변수: GEMINI_API_KEY
+ *
+ * 알려진 한계: 구글 뉴스 링크(news.google.com/rss/articles/...)는 자바스크립트로만
+ * 원본 주소를 확인할 수 있는 구조로 파악되어(2026-07 확인), 서버 코드로는 본문 수집이
+ * 대부분 불가능하다. 네이버 API 등 원본 링크가 직접 제공되는 기사만 본문 수집이 가능하다.
  */
 
 const CRAWL_TIMEOUT_MS = 8000;
-const MAX_CRAWL = 20;          // 상한 건수와 무관하게 요약용 크롤링은 최대 20건까지만 시도 (실행 시간 제어)
-const MIN_SUCCESS = 2;         // 이 건수 미만이면 요약 생성하지 않음
+const MAX_CRAWL = 50;          // 화면 표시 상한(최대 50건)과 동일하게 전체 시도
 const BODY_CHAR_LIMIT = 1500;  // 기사 1건당 본문 사용 길이 제한
 
 function stripTags(s) {
@@ -172,23 +176,32 @@ export default async function handler(req, res) {
 
   const results = await Promise.allSettled(target.map(a => crawlArticle(a.url)));
   const successItems = [];
+  const titleOnlyItems = [];
   const debugList = [];
   results.forEach((r, i) => {
     if (r.status === 'fulfilled') {
       debugList.push(r.value.debug);
-      if (r.value.text) successItems.push({ ...target[i], body: r.value.text });
+      if (r.value.text) {
+        successItems.push({ ...target[i], body: r.value.text });
+      } else {
+        titleOnlyItems.push(target[i]);
+      }
     } else {
       debugList.push({ url: target[i].url, note: '예외 발생: ' + String(r.reason) });
+      titleOnlyItems.push(target[i]);
     }
   });
   const successCount = successItems.length;
 
-  if (successCount < MIN_SUCCESS) {
+  /* 본문 확인된 기사가 없으면 요약 생성 없이 제목 목록만 반환 */
+  if (successCount === 0) {
     return res.status(200).json({
-      ok: false,
+      ok: true,
       totalCount,
-      successCount,
-      reason: '본문 수집 성공 건수 부족',
+      successCount: 0,
+      summary: null,
+      sources: [],
+      titleOnly: titleOnlyItems.map(a => ({ title: a.title, source: a.source, date: a.date, url: a.url })),
       debug: debugList,
     });
   }
@@ -200,7 +213,8 @@ export default async function handler(req, res) {
   const prompt =
     '아래는 "' + subject + '" 관련 ' + (period || '') + ' 기간의 기사 본문입니다.\n\n' +
     '요약 원칙:\n' +
-    '- 기사에 실제로 보도된 사실만 사용하고, 추론·전망·창작은 배제할 것\n' +
+    '- 아래 제공된 기사 본문에 실제로 보도된 사실만 사용할 것\n' +
+    '- 여기 없는 기사나 일반 지식으로 내용을 추측하거나 창작하지 말 것\n' +
     '- 확인되지 않은 내용은 언급하지 말 것\n' +
     '- 한국어로 간결하게, 핵심 위주로 정리할 것\n' +
     '- 가능하면 주제별로 묶어 정리할 것\n\n' +
@@ -235,6 +249,7 @@ export default async function handler(req, res) {
       successCount,
       summary,
       sources: successItems.map(a => ({ title: a.title, source: a.source, date: a.date, url: a.url })),
+      titleOnly: titleOnlyItems.map(a => ({ title: a.title, source: a.source, date: a.date, url: a.url })),
       debug: debugList,
     });
 
