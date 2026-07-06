@@ -34,10 +34,18 @@ const TRUSTED = {
 
 /* ── 차단 목록 ──────────────────────────────────────────────── */
 const BLOCKED = [
-  // 페이월 / 구독 필요
+  // 페이월 / 구독 필요 — 출처명 + 도메인 모두 차단
   'reuters', 'reuters.com',
-  'wall street journal', 'wsj.com', 'nytimes', 'new york times',
-  'ft.com', 'economist', 'the information', 'barrons',
+  'wall street journal', 'wsj.com', 'wsj.org',
+  'nytimes', 'new york times', 'nytimes.com',
+  'ft.com', 'financial times',
+  'economist', 'economist.com',
+  'the information', 'theinformation.com',
+  'barrons', 'barrons.com',
+  'bloomberg', 'bloomberg.com',
+  'washingtonpost', 'washington post', 'washingtonpost.com',
+  'theatlantic', 'the atlantic', 'theatlantic.com',
+  'wired.com',
   // PR 배포 / 자사 뉴스룸
   'prnewswire', 'businesswire', 'globenewswire', 'accesswire',
   'nvidianews.nvidia.com', 'ir.tesla.com',
