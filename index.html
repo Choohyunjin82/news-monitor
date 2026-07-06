@@ -76,6 +76,9 @@
   .summary-box { margin-top: 14px; padding: 18px 20px; border: 1px solid var(--ink); background: var(--paper); }
   .summary-meta { font-family: monospace; font-size: 11px; color: var(--ink-faint);
     text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .summary-section-label { font-family: monospace; font-size: 11px; color: var(--ink);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
   .summary-text { font-size: 14.5px; line-height: 1.8; color: var(--ink); white-space: normal; }
   .summary-sources { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
   .summary-src-item { font-size: 12.5px; color: var(--ink-soft); padding: 4px 0; }
@@ -370,7 +373,7 @@ async function requestSummary() {
     if (!res.ok || !data.ok) {
       renderSummaryBox({
         error: true,
-        message: (data && data.error) || '본문 수집 성공 건수가 부족하여 요약을 생성할 수 없습니다.',
+        message: (data && data.error) || '요약 서비스 요청 중 오류가 발생했습니다.',
         totalCount: data ? data.totalCount : null,
         successCount: data ? data.successCount : null,
         debug: data ? data.debug : null,
@@ -432,17 +435,38 @@ function renderSummaryBox(state) {
   }
 
   const d = state.data;
-  const sourcesHtml = d.sources.map(s =>
+  const failCount = d.totalCount - d.successCount;
+
+  const sourcesHtml = (d.sources || []).map(s =>
     '<div class="summary-src-item"><a href="' + s.url + '" target="_blank" rel="noopener">' +
     escapeHtml(s.title) + '</a><span class="dot">·</span>' + escapeHtml(s.source || '') + ' · ' + s.date + '</div>'
   ).join('');
 
-  box.innerHTML =
-    '<div class="summary-meta">전체 ' + d.totalCount + '건 중 ' + d.successCount +
-    '건 본문 수집 성공 → ' + d.successCount + '건 기준 요약</div>' +
-    '<div class="summary-text">' + escapeHtml(d.summary).replace(/\n/g, '<br>') + '</div>' +
-    '<div class="summary-sources">' + sourcesHtml + '</div>' +
-    '<button class="summary-close" onclick="closeSummaryBox()">닫기</button>';
+  const titleOnlyHtml = (d.titleOnly || []).map(s =>
+    '<div class="summary-src-item"><a href="' + s.url + '" target="_blank" rel="noopener">' +
+    escapeHtml(s.title) + '</a><span class="dot">·</span>' + escapeHtml(s.source || '') + ' · ' + s.date + '</div>'
+  ).join('');
+
+  let html = '<div class="summary-meta">전체 ' + d.totalCount + '건 중 ' + d.successCount +
+    '건 본문 확인, ' + failCount + '건 본문 미확인</div>';
+
+  if (d.summary) {
+    html +=
+      '<div class="summary-section-label">본문 확인 후 요약 (' + d.successCount + '건 기준)</div>' +
+      '<div class="summary-text">' + escapeHtml(d.summary).replace(/\n/g, '<br>') + '</div>' +
+      '<div class="summary-sources">' + sourcesHtml + '</div>';
+  } else {
+    html += '<div class="summary-text">본문을 확인하지 못해 요약을 생성하지 않았습니다. 아래는 제목 목록입니다.</div>';
+  }
+
+  if (titleOnlyHtml) {
+    html +=
+      '<div class="summary-section-label" style="margin-top:16px;">본문 미확인 — 제목만 확인됨 (' + (d.titleOnly ? d.titleOnly.length : 0) + '건)</div>' +
+      '<div class="summary-sources">' + titleOnlyHtml + '</div>';
+  }
+
+  html += '<button class="summary-close" onclick="closeSummaryBox()">닫기</button>';
+  box.innerHTML = html;
 }
 
 /* ── 기간 요약용 복사 (자동 요약 실패 시 대체 수단) ── */
